@@ -4,27 +4,29 @@ import re
 from datetime import datetime
 import requests
 
-# กำหนดลิงก์ Discord Webhook ของคุณที่นี่
-DIRECT_WEBHOOK_URL = "https://discord.com/api/webhooks/1566370385413410829/NnfAwIbsr-5PxxXjofhgiei2Ue42VFhbIkN0GGQ55mPr072ew90HnfHV9uBUH9BrqMar"
-DISCORD_WEBHOOK_URL = DIRECT_WEBHOOK_URL if DIRECT_WEBHOOK_URL != "ใส่ลิงก์เว็บฮุคของคุณที่นี่" else os.getenv('DISCORD_WEBHOOK_URL')
+# แทนที่ลิงก์ด้านล่างด้วย Webhook URL ของคุณ หรือตั้งค่าใน GitHub Secrets
+DIRECT_WEBHOOK_URL = "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"
+DISCORD_WEBHOOK_URL = DIRECT_WEBHOOK_URL if "YOUR_WEBHOOK_ID" not in DIRECT_WEBHOOK_URL else os.getenv('DISCORD_WEBHOOK_URL')
 
-def send_roblox_audio_notification(message_content, author_name="ระบบอัตโนมัติ"):
-    if not DISCORD_WEBHOOK_URL or DISCORD_WEBHOOK_URL == "ใส่ลิงก์เว็บฮุคของคุณที่นี่":
-        print("กรุณากรอกลิงก์ Webhook ให้ถูกต้อง")
+def send_roblox_audio_notification(message_content, author_name="ระบบอัตโนมัติ GitHub Actions"):
+    if not DISCORD_WEBHOOK_URL or "YOUR_WEBHOOK_ID" in DISCORD_WEBHOOK_URL:
+        print("Error: ยังไม่ได้กำหนดค่า DISCORD_WEBHOOK_URL ที่ถูกต้อง")
         return
 
-    roblox_audio_regex = r'(https?:\/\/(?:www\.)?roblox\.com\/(?:library|catalog|audio)\/(\d+)\/[\w-]+)|(\b\d{9,11}\b)'
+    print(f"กำลังตรวจสอบข้อความ: {message_content}")
+    roblox_audio_regex = r'(https?:\/\/(?:www\.)?roblox\.com\/(?:library|catalog|audio|item\.aspx\?id=)\/(\d+)\/[\w-]*)|(\b\d{9,11}\b)'
     match = re.search(roblox_audio_regex, message_content)
 
     if match:
         audio_id = match.group(2) or match.group(3) or re.sub(r'\D', '', message_content)
+        print(f"พบ Audio ID: {audio_id}")
         
         creator_name = "ไม่ระบุข้อมูลผู้สร้าง"
         asset_name = "เพลง Roblox"
         thumbnail_url = "https://tr.rbxcdn.com/18m-1/150/150/Image/Png"
 
         try:
-            res = requests.get(f'https://economy.roblox.com/v2/assets/{audio_id}/details', timeout=5)
+            res = requests.get(f'https://economy.roblox.com/v2/assets/{audio_id}/details', timeout=10)
             if res.status_code == 200:
                 data = res.json()
                 creator_name = data.get('Creator', {}).get('Name', 'Unknown')
@@ -33,7 +35,7 @@ def send_roblox_audio_notification(message_content, author_name="ระบบอ
             print(f"ไม่สามารถดึงข้อมูลรายละเอียด: {e}")
 
         try:
-            thumb_res = requests.get(f'https://thumbnails.roblox.com/v1/assets?assetIds={audio_id}&size=420x420&format=Png&isCircular=false', timeout=5)
+            thumb_res = requests.get(f'https://thumbnails.roblox.com/v1/assets?assetIds={audio_id}&size=420x420&format=Png&isCircular=false', timeout=10)
             if thumb_res.status_code == 200:
                 thumb_data = thumb_res.json()
                 if thumb_data.get('data'):
@@ -46,7 +48,7 @@ def send_roblox_audio_notification(message_content, author_name="ระบบอ
 
         payload = {
             "embeds": [{
-                "title": "🎵 ตรวจพบเพลง Roblox ใหม่ (ผ่าน Webhook)",
+                "title": "🎵 ตรวจพบเพลง Roblox ใหม่ (อัตโนมัติ)",
                 "description": f"**ชื่อเพลง:** {asset_name}",
                 "color": 5793266,
                 "thumbnail": {"url": thumbnail_url},
@@ -62,14 +64,17 @@ def send_roblox_audio_notification(message_content, author_name="ระบบอ
         }
 
         try:
-            requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=5)
-            print(f"ส่งข้อมูลเพลง ID {audio_id} ไปยัง Webhook สำเร็จ")
+            response = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
+            if response.status_code in [200, 204]:
+                print(f"ส่งข้อมูลเพลง ID {audio_id} ไปยัง Webhook สำเร็จ!")
+            else:
+                print(f"ส่งไม่สำเร็จ Status Code: {response.status_code}, Response: {response.text}")
         except Exception as e:
             print(f"เกิดข้อผิดพลาดในการส่ง Webhook: {e}")
     else:
-        print("ไม่พบไอดีเพลง Roblox ในข้อความ")
+        print("ไม่พบไอดีเพลง Roblox ในข้อความที่กำหนด")
 
 if __name__ == "__main__":
-    # ตัวอย่างการทดสอบส่งข้อความผ่าน Webhook โดยตรง
+    # ทดสอบส่งลิงก์เพลงตัวอย่างเพื่อให้มั่นใจว่า Webhook ทำงานถูกต้อง
     sample_message = "https://www.roblox.com/library/1848354546/song"
-    send_roblox_audio_notification(sample_message, "GitHub Actions")
+    send_roblox_audio_notification(sample_message, "GitHub Actions Test")
