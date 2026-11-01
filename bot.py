@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 
 # แทนที่ลิงก์ด้านล่างด้วย Webhook URL ของคุณ หรือตั้งค่าใน GitHub Secrets
-DIRECT_WEBHOOK_URL = "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"
+DIRECT_WEBHOOK_URL = "https://discord.com/api/webhooks/1566370385413410829/NnfAwIbsr-5PxxXjofhgiei2Ue42VFhbIkN0GGQ55mPr072ew90HnfHV9uBUH9BrqMar"
 DISCORD_WEBHOOK_URL = DIRECT_WEBHOOK_URL if "YOUR_WEBHOOK_ID" not in DIRECT_WEBHOOK_URL else os.getenv('DISCORD_WEBHOOK_URL')
 
 def send_roblox_audio_notification(message_content, author_name="ระบบอัตโนมัติ GitHub Actions"):
